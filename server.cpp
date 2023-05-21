@@ -11,18 +11,15 @@
 
 #define PORT "9034"   // Port we're listening on
 
-pReactor pr; /// global reactor to be use to manage the communication of the server
+pReactor preactor; /// global reactor to be use to manage the communication of the server
 
-void when_exit(int signal){
-    delReactor(pr);
+void _exit(int signal){
+    delReactor(preactor);
     exit(0);
 }
 
 
-/**
- * This function initial a new listener fd
- * @return listening socket
- */
+// Return a listening socket
 int get_listener_socket() {
     int listener;     // Listening socket descriptor
     int yes = 1;        // For setsockopt() SO_REUSEADDR, below
@@ -76,9 +73,9 @@ int get_listener_socket() {
 int main() 
 {
 
-    signal(SIGINT, when_exit);
+    signal(SIGINT, _exit); // If we get some issue from the user
 
-    pr = (pReactor) createReactor();
+    preactor = (pReactor) createReactor();
 
     // Set up and get a listening socket
     int listener = get_listener_socket();
@@ -87,10 +84,10 @@ int main()
         fprintf(stderr, "error getting listening socket\n");
         exit(1);
     }
-    handler_t handler = accept_clients;
-    addFd(pr,  listener, handler);
+    handler_t handler = acceptClients;
+    addFd(preactor,  listener, handler);
     printf("server: waiting for new connections...\n");
-    WaitFor(pr);
+    WaitFor(preactor);
     close(listener);
 
     return 0;
