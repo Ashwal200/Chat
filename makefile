@@ -2,13 +2,13 @@ CC = gcc
 CXX = g++
 FLAGS = -Wall -g -w
 
-all:pollServer pollClient
+all:server client
 
-pollServer: pollserver.cpp cpplib.so
-	$(CXX) $(FLAGS) pollserver.cpp ./cpplib.so -o pollServer
+server: server.cpp cpplib.so
+	$(CXX) $(FLAGS) server.cpp ./cpplib.so -o server
 
-pollClient: pollclient.cpp cpplib.so
-	$(CXX) $(FLAGS) pollclient.cpp ./cpplib.so -o pollClient
+client: client.cpp cpplib.so
+	$(CXX) $(FLAGS) client.cpp ./cpplib.so -o client
 
 # shared library for all the c++ code files
 cpplib.so: reactor.cpp reactor.hpp
@@ -16,4 +16,4 @@ cpplib.so: reactor.cpp reactor.hpp
 
 
 clean:
-	rm -f *.o *.so pollServer pollClient
+	rm -f *.o *.so server client

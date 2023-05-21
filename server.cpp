@@ -1,8 +1,3 @@
-/**
- * pollserver.c -- a cheezy multiperson chat server
- * A basic Chat server implementation using my reactor and beej server template
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -102,7 +97,7 @@ void handle_client(int *newfd)
         perror("read from fd error");
     }
     else if (bytes == 0){
-        printf("pollserver: client seems to be off, remove his handler... \n");
+        printf("server: client seems to be off, remove his handler... \n");
         RemoveHandler((void *)pr, *newfd);
         close(*newfd);
     }
@@ -128,9 +123,10 @@ void accept_clients(int *listener) {
     if (newfd == -1) {
         perror("accept");
     } else {
-        InstallHandler(pr, (void (*)(void*))handle_client, newfd);
+        handler_t handler = handle_client;
+        addFd(pr, newfd, handler);
 
-        printf("pollserver: new connection from %s on socket %d\n",
+        printf("server: new connection from %s on socket %d\n",
                inet_ntop(remoteaddr.ss_family, get_in_addr((struct sockaddr *) &remoteaddr), remoteIP,
                          INET6_ADDRSTRLEN), newfd);
     }
@@ -142,7 +138,7 @@ int main()
 
     signal(SIGINT, when_exit);
 
-    pr = (pReactor) newReactor();
+    pr = (pReactor) createReactor();
 
     // Set up and get a listening socket
     int listener = get_listener_socket();
@@ -151,10 +147,10 @@ int main()
         fprintf(stderr, "error getting listening socket\n");
         exit(1);
     }
-
-    InstallHandler(pr, (void (*)(void*)) accept_clients, listener);
-    printf("pollserver: waiting for new connections...\n");
-    pthread_join(pr->thread, NULL);
+    handler_t handler = accept_clients;
+    addFd(pr,  listener, handler);
+    printf("server: waiting for new connections...\n");
+    WaitFor(pr);
     close(listener);
 
     return 0;

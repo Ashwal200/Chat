@@ -5,6 +5,10 @@
 #include <string.h>
 #include "reactor.hpp"
 
+
+
+
+
 void *activate_poll_listener(void *reactor) {
     pReactor pr = (pReactor) reactor;
     while (1) {
@@ -17,7 +21,7 @@ void *activate_poll_listener(void *reactor) {
     }
 }
 
-void *newReactor() {
+void *createReactor() {
     pReactor reactor = (pReactor) malloc(REACTOR_SIZE);
     if (reactor == NULL) {
         perror("reactor malloc error");
@@ -29,7 +33,7 @@ void *newReactor() {
     return reactor;
 }
 
-void InstallHandler(void *reactor, void (*func)(void *), int fd) {
+void addFd(void *reactor, int fd , handler_t handler) {
     pReactor pr = (pReactor) reactor;
 
     if (pr->handlers_size == 0) {
@@ -46,7 +50,7 @@ void InstallHandler(void *reactor, void (*func)(void *), int fd) {
             perror("reactor malloc error");
             exit(1);
         }
-        pr->funcs[0] = func; // adding the function to the handler list
+        pr->funcs[0] = cast_Handler handler; // adding the function to the handler list
         pr->handlers_size += 1;
         /// since its the first handler installation we need to create the handle thread
         pthread_create(&pr->thread, NULL, activate_poll_listener, reactor);
@@ -67,7 +71,7 @@ void InstallHandler(void *reactor, void (*func)(void *), int fd) {
             perror("reactor malloc error");
             exit(1);
         }
-        pr->funcs[pr->handlers_size - 1] = func; // adding the function to the handler list
+        pr->funcs[pr->handlers_size - 1] = cast_Handler handler; // adding the function to the handler list
 
     }
 }
@@ -121,4 +125,12 @@ void delReactor(pReactor pr){
         free(pr->funcs);
     }
     free(pr);
+}
+
+
+void WaitFor(void * reactor)
+{
+    pReactor preactor = (pReactor) reactor;
+    pthread_join(preactor->thread, NULL);
+
 }
