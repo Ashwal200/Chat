@@ -15,7 +15,7 @@ void *activate_poll_listener(void *reactor) {
         poll(pr->pfds, pr->handlers_size, -1); // -1 mean making the poll wait forever (with no timeout)
         for (int i = 0; i < pr->handlers_size; ++i) { // for all the fds
             if (pr->pfds[i].revents & POLLIN) { // if the events is one we read from the fd
-                pr->funcs[i](&(pr->pfds[i].fd)); // run the suitable function[i] on fd[i]
+                pr->funcs[i](&(pr->pfds[i].fd) , pr); // run the suitable function[i] on fd[i]
             }
         }
     }
@@ -45,14 +45,14 @@ void addFd(void *reactor, int fd , handler_t handler) {
         pr->pfds[0].fd = fd; // adding the fd to the fd list
         pr->pfds[0].events = POLLIN; // set the "event listener" to input
 
-        pr->funcs = (void (**)(void *)) malloc(8);
+        pr->funcs = CAST_TYPE malloc(8);
         if (pr->funcs == NULL) {
             perror("reactor malloc error");
             exit(1);
         }
-        pr->funcs[0] = cast_Handler handler; // adding the function to the handler list
+        pr->funcs[0] = handler; // adding the function to the handler list
         pr->handlers_size += 1;
-        /// since its the first handler installation we need to create the handle thread
+        // since its the first handler installation we need to create the handle thread
         pthread_create(&pr->thread, NULL, activate_poll_listener, reactor);
 
     } else {
@@ -66,12 +66,12 @@ void addFd(void *reactor, int fd , handler_t handler) {
         pr->pfds[pr->handlers_size - 1].fd = fd; // adding the fd to the fd list
         pr->pfds[pr->handlers_size - 1].events = POLLIN; // set the "event listener" to input
 
-        pr->funcs = (void (**)(void *)) realloc(pr->funcs, 8 * pr->handlers_size);
+        pr->funcs = CAST_TYPE realloc(pr->funcs, 8 * pr->handlers_size);
         if (pr->funcs == NULL) {
             perror("reactor malloc error");
             exit(1);
         }
-        pr->funcs[pr->handlers_size - 1] = cast_Handler handler; // adding the function to the handler list
+        pr->funcs[pr->handlers_size - 1] = handler; // adding the function to the handler list
 
     }
 }
@@ -99,7 +99,7 @@ void RemoveHandler(void *reactor, int fd) {
     } else {
         --(pr->handlers_size);
         struct pollfd *newpfds = (struct pollfd *) malloc(sizeof(struct pollfd) * pr->handlers_size);
-        void (**newfuncs)(void *) = (void (**)(void *)) malloc(8 * pr->handlers_size);
+        void (**newfuncs)(void *, void *) = CAST_TYPE malloc(8 * pr->handlers_size);
 
         if (fd_index != 0) {
             memcpy(newpfds, pr->pfds, fd_index * sizeof(struct pollfd)); // copy everything BEFORE the index
@@ -133,4 +133,73 @@ void WaitFor(void * reactor)
     pReactor preactor = (pReactor) reactor;
     pthread_join(preactor->thread, NULL);
 
+}
+
+
+
+
+// Function ...
+/**
+ * This function attached to the reactor to handle the communication from the client
+ * @param newfd - the client fd
+ */
+void handle_client(void *newfd, void * reactor) 
+{
+    int* fd = (int*) newfd;
+    
+    char buff[1024];
+    memset(buff, '\0', 1024);
+    int bytes = read(*fd, buff, 1024);
+    if (bytes < 0) {
+        perror("read from fd error");
+    }
+    else if (bytes == 0){
+        printf("server: client seems to be off, remove his handler... \n");
+        RemoveHandler(reactor, *fd);
+        close(*fd);
+    }
+    else 
+    {
+        printf("New message: %s\n", buff);
+    }
+
+}
+
+/**
+ * This function is handler function for the listener fd
+ * @param listener - the listener fd
+ */
+void accept_clients(void *listener , void * reactor) {
+    int* fd = (int*) listener;
+    pReactor preactor = (pReactor) reactor;
+    int newfd; // Newly accept()ed socket descriptor
+    struct sockaddr_storage remoteaddr; // Client address
+    char remoteIP[INET6_ADDRSTRLEN];
+    socklen_t addrlen = sizeof(remoteaddr);
+
+    newfd = accept(*fd, (struct sockaddr *) &remoteaddr, &addrlen);
+
+    if (newfd == -1) {
+        perror("accept");
+    } else {
+        handler_t handler = handle_client;
+        addFd(preactor, newfd, handler);
+
+        printf("server: new connection from %s on socket %d\n",
+               inet_ntop(remoteaddr.ss_family, get_in_addr((struct sockaddr *) &remoteaddr), remoteIP,
+                         INET6_ADDRSTRLEN), newfd);
+    }
+}
+
+/**
+ * Get sockaddr, IPv4 or IPv6:
+ * @param sa
+ * @return return the ip of the sockaddr struct
+ */
+void *get_in_addr(struct sockaddr *sa) {
+    if (sa->sa_family == AF_INET) {
+        return &(((struct sockaddr_in *) sa)->sin_addr);
+    }
+
+    return &(((struct sockaddr_in6 *) sa)->sin6_addr);
 }

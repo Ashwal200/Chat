@@ -18,18 +18,6 @@ void when_exit(int signal){
     exit(0);
 }
 
-/**
- * Get sockaddr, IPv4 or IPv6:
- * @param sa
- * @return return the ip of the sockaddr struct
- */
-void *get_in_addr(struct sockaddr *sa) {
-    if (sa->sa_family == AF_INET) {
-        return &(((struct sockaddr_in *) sa)->sin_addr);
-    }
-
-    return &(((struct sockaddr_in6 *) sa)->sin6_addr);
-}
 
 /**
  * This function initial a new listener fd
@@ -82,54 +70,6 @@ int get_listener_socket() {
     }
 
     return listener;
-}
-
-/**
- * This function attached to the reactor to handle the communication from the client
- * @param newfd - the client fd
- */
-void handle_client(int *newfd) 
-{
-    char buff[1024];
-    memset(buff, '\0', 1024);
-    int bytes = read(*newfd, buff, 1024);
-    if (bytes < 0) {
-        perror("read from fd error");
-    }
-    else if (bytes == 0){
-        printf("server: client seems to be off, remove his handler... \n");
-        RemoveHandler((void *)pr, *newfd);
-        close(*newfd);
-    }
-    else 
-    {
-        printf("New message: %s\n", buff);
-    }
-
-}
-
-/**
- * This function is handler function for the listener fd
- * @param listener - the listener fd
- */
-void accept_clients(int *listener) {
-    int newfd; // Newly accept()ed socket descriptor
-    struct sockaddr_storage remoteaddr; // Client address
-    char remoteIP[INET6_ADDRSTRLEN];
-    socklen_t addrlen = sizeof(remoteaddr);
-
-    newfd = accept(*listener, (struct sockaddr *) &remoteaddr, &addrlen);
-
-    if (newfd == -1) {
-        perror("accept");
-    } else {
-        handler_t handler = handle_client;
-        addFd(pr, newfd, handler);
-
-        printf("server: new connection from %s on socket %d\n",
-               inet_ntop(remoteaddr.ss_family, get_in_addr((struct sockaddr *) &remoteaddr), remoteIP,
-                         INET6_ADDRSTRLEN), newfd);
-    }
 }
 
 

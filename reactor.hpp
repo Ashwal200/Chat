@@ -3,14 +3,22 @@
 
 #include <poll.h>
 #include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
-typedef void (*handler_t)(int *);
-#define cast_Handler (void (*)(void *))
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include<signal.h>
+typedef void (*handler_t)(void * , void *);
+#define CAST_TYPE (void (**)(void * , void *))
 #define REACTOR_SIZE sizeof(struct reactor)
 
 typedef struct reactor {
     struct pollfd *pfds; // list of fds to listen on
-    void (**funcs)(void *); // list of handlers function
+    void (**funcs)(void * , void *); // list of handlers function
     pthread_t thread; // the thread who run the handlers
     int handlers_size;
     ///Every fd in the pfds[i] get handle by a function from funcs[i]
@@ -23,5 +31,10 @@ void *activate_poll_listener(void *reactor);
 void delReactor(pReactor pr); /// delete and free al the reactor
 
 void WaitFor(void * reactor);
+
+void handle_client(void *newfd , void * reactor);
+void accept_clients(void *listener , void * reactor);
+void *get_in_addr(struct sockaddr *sa);
+
 
 #endif //DESIGN_PATTERNS_REACTOR_HPP
