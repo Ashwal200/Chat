@@ -2,13 +2,13 @@ CC = gcc
 CXX = g++
 FLAGS = -Wall -g -w
 
-all:server client
+all:react_server client
 
-server: server.cpp cpplib.so
-	$(CXX) $(FLAGS) server.cpp ./cpplib.so -o server
+react_server: server.cpp cpplib.so
+	$(CXX) $(FLAGS) server.cpp ./cpplib.so -o react_server
 
-client: client.cpp cpplib.so
-	$(CXX) $(FLAGS) client.cpp ./cpplib.so -o client
+client: client.cpp
+	$(CXX) $(FLAGS) client.cpp -o client
 
 # shared library for all the c++ code files
 cpplib.so: reactor.cpp reactor.hpp
@@ -16,4 +16,4 @@ cpplib.so: reactor.cpp reactor.hpp
 
 
 clean:
-	rm -f *.o *.so server client
+	rm -f *.o *.so react_server client
