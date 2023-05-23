@@ -15,8 +15,8 @@
 
 pReactor preactor;
 void _exit(int signal){
-    stopReactor(preactor);
-    freeReactor(preactor);
+    stopReactor(preactor); // Stop the thread
+    freeReactor(preactor); // Free all the data that allocate
     exit(0);
 }
 
