@@ -7,10 +7,6 @@
 
 
 
-
-
-
-
 void *createReactor() {
     pReactor reactor = (pReactor) malloc(REACTOR_SIZE);
     if (reactor == NULL) {
