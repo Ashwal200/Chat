@@ -1,4 +1,4 @@
-#Reactor Project README
+# Reactor Project README
 This project is a demonstration of the reactor pattern for event handling using C++. The reactor pattern is an event handling pattern for handling service requests delivered concurrently to a service handler by one or more inputs. The service handler then demultiplexes the incoming requests and dispatches them synchronously to the associated request handlers.
 
 This project uses the POSIX poll system call for event demultiplexing and POSIX threads to handle events concurrently. The reactor pattern is implemented in two primary files: reactor.cpp and reactor.hpp. The main server application is implemented in server.cpp.
