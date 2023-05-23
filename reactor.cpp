@@ -69,6 +69,11 @@ void addFd(void *reactor, int fd , handler_t handler) {
     }
 }
 
+/**
+ * This function removes a specified fd from the reactor  
+ * It locates the index of the fd in the pfds array, shifts the remaining elements, 
+ * and updates the reactor's size and arrays accordingly
+*/
 void RemoveHandler(void *reactor, int fd) {
     pReactor preactor = (pReactor) reactor;
     int fd_index = -1;
@@ -107,6 +112,9 @@ void RemoveHandler(void *reactor, int fd) {
     }
 }
 
+/**
+ * Free all the memory from the reactor object.
+*/
 void freeReactor(pReactor preactor){
     if (preactor->reactor_size != 0){
         free(preactor->pfds);
@@ -115,7 +123,9 @@ void freeReactor(pReactor preactor){
     free(preactor);
 }
 
-
+/**
+ * Make the main thread wait for the reactor to finish. 
+*/
 void WaitFor(void * reactor)
 {
     pReactor preactor = (pReactor) reactor;
@@ -124,17 +134,23 @@ void WaitFor(void * reactor)
 }
 
 
-
+/**
+ * Read data from the fd and print it on the terminal.
+ * If the data is empty, close the connaction with the client and remove him from the
+ * reactor list.
+*/
 void printData(void *newfd, void * reactor) 
 {
     int* fd = (int*) newfd;
     
     char buff[BUF_SIZE] ={0};
     int bytes = read(*fd, buff, BUF_SIZE);
-    if (bytes < 0) {
+    if (bytes < 0) 
+    {
         perror("read");
     }
-    else if (bytes == 0){
+    else if (bytes == 0)
+    {
         printf("server: client disconnected... \n");
         RemoveHandler(reactor, *fd);
         close(*fd);
@@ -145,10 +161,14 @@ void printData(void *newfd, void * reactor)
     }
 }
 
-void acceptClients(void *listener , void * reactor) {
+/**
+ * The function will accept new client and send it to the newFd() to save on the reactor fd list.
+ */
+void acceptClients(void *listener , void * reactor) 
+{
     int* fd = (int*) listener;
     pReactor preactor = (pReactor) reactor;
-    int newfd; // Newly accept()ed socket descriptor
+    int newfd; 
     struct sockaddr_storage remoteaddr; // Client address
     char remoteIP[INET6_ADDRSTRLEN];
     socklen_t addrlen = sizeof(remoteaddr);
@@ -158,7 +178,8 @@ void acceptClients(void *listener , void * reactor) {
     if (newfd == -1) 
     {
         perror("accept");
-    } else 
+    } 
+    else 
     {
         handler_t handler = printData;
         addFd(preactor, newfd, handler);
@@ -168,29 +189,41 @@ void acceptClients(void *listener , void * reactor) {
                          INET6_ADDRSTRLEN), newfd);
     }
 }
-// Get sockaddr, IPv4 or IPv6:
-void *get_in_addr(struct sockaddr *sa) {
-    if (sa->sa_family == AF_INET) {
+
+/**
+ * Get sockaddr, IPv4 or IPv6.
+ */ 
+void *get_in_addr(struct sockaddr *sa) 
+{
+    if (sa->sa_family == AF_INET) 
+    {
         return &(((struct sockaddr_in *) sa)->sin_addr);
     }
 
     return &(((struct sockaddr_in6 *) sa)->sin6_addr);
 }
 
+/**
+ * Stop the busy loop thread in the finction "startReactor()".
+*/
 void stopReactor(void * reactor)
 {
     pReactor preactor = (pReactor) reactor;
     pthread_cancel(preactor->thread);
 }
 
-void *startReactor(void *reactor) {
+void *startReactor(void *reactor) 
+{
     pReactor preactor = (pReactor) reactor;
 
     
-    while (1) {
+    while (1) 
+    {
         poll(preactor->pfds, preactor->reactor_size, -1); // -1 mean making the poll wait forever (with no timeout)
-        for (int i = 0; i < preactor->reactor_size; ++i) { // for all the fds
-            if (preactor->pfds[i].revents & POLLIN) { // if the events is one we read from the fd
+        for (int i = 0; i < preactor->reactor_size; ++i) 
+        { // for all the fds
+            if (preactor->pfds[i].revents & POLLIN) 
+            { // if the events is one we read from the fd
                 preactor->funcs[i](&(preactor->pfds[i].fd) , preactor); // run the suitable function[i] on fd[i]
             }
         }
