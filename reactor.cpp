@@ -83,12 +83,12 @@ void RemoveHandler(void *reactor, int fd) {
     { 
         // in case this is the last
         /// since we remove the last handler we need to cancel the handler thread
-        pthread_cancel(preactor->thread);
-        free(preactor->funcs);
-        preactor->funcs = NULL;
-        free(preactor->pfds);
-        preactor->pfds = NULL;
-        preactor->reactor_size = 0;
+        pthread_cancel(pr->thread);
+        free(pr->funcs);
+        pr->funcs = NULL;
+        free(pr->pfds);
+        pr->pfds = NULL;
+        pr->reactor_size = 0;
     } 
     else 
     {
