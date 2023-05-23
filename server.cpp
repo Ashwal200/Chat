@@ -15,7 +15,8 @@
 
 pReactor preactor;
 void _exit(int signal){
-    delReactor(preactor);
+    printf("finish by force\n");
+    freeReactor(preactor);
     exit(0);
 }
 

@@ -30,13 +30,11 @@ void *createReactor();
 void addFd(void *reactor, int fd , handler_t handler);
 void RemoveHandler(void *reactor, int fd);
 void *startReactor(void *reactor);
-void delReactor(pReactor pr); /// delete and free al the reactor
-// no stop 
+void freeReactor(pReactor pr); /// delete and free al the reactor
 void WaitFor(void * reactor);
-
 void printData(void *newfd , void * reactor);
 void acceptClients(void *listener , void * reactor);
 void *get_in_addr(struct sockaddr *sa);
-
+void stopReactor(void *);
 
 #endif //DESIGN_PATTERNS_REACTOR_HPP

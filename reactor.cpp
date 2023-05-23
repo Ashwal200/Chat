@@ -9,18 +9,7 @@
 
 
 
-void *startReactor(void *reactor) {
-    pReactor pr = (pReactor) reactor;
 
-    while (1) {
-        poll(pr->pfds, pr->reactor_size, -1); // -1 mean making the poll wait forever (with no timeout)
-        for (int i = 0; i < pr->reactor_size; ++i) { // for all the fds
-            if (pr->pfds[i].revents & POLLIN) { // if the events is one we read from the fd
-                pr->funcs[i](&(pr->pfds[i].fd) , pr); // run the suitable function[i] on fd[i]
-            }
-        }
-    }
-}
 
 void *createReactor() {
     pReactor reactor = (pReactor) malloc(REACTOR_SIZE);
@@ -43,46 +32,45 @@ void *createReactor() {
 }
 
 void addFd(void *reactor, int fd , handler_t handler) {
-    pReactor pr = (pReactor) reactor;
+    pReactor preactor = (pReactor) reactor;
 
-    if (pr->reactor_size == 0) 
+    if (preactor->reactor_size == 0) 
     {
-        pr->pfds[0].fd = fd; // Adding the fd to the fd list
-        pr->pfds[0].events = POLLIN; // Set the "event listener" to input
+        preactor->pfds[0].fd = fd; // Adding the fd to the fd list
+        preactor->pfds[0].events = POLLIN; // Set the "event listener" to input
 
-        pr->funcs[0] = handler; // Adding the function to the handler list
-        pr->reactor_size += 1;
+        preactor->funcs[0] = handler; // Adding the function to the handler list
+        preactor->reactor_size += 1;
         // since its the first handler installation we need to create the handle thread
-        pthread_create(&pr->thread, NULL, startReactor, reactor);
-
+        pthread_create(&preactor->thread, NULL, startReactor, reactor);
     } 
     else 
     {
-        pr->reactor_size += 1;
-        pr->pfds = (struct pollfd *) realloc(pr->pfds, sizeof(struct pollfd) * pr->reactor_size);
-        if (pr->pfds == NULL) {
+        preactor->reactor_size += 1;
+        preactor->pfds = (struct pollfd *) realloc(preactor->pfds, sizeof(struct pollfd) * preactor->reactor_size);
+        if (preactor->pfds == NULL) {
             perror("reactor malloc error");
             exit(1);
         }
-        pr->pfds[pr->reactor_size - 1].fd = fd; // adding the fd to the fd list
-        pr->pfds[pr->reactor_size - 1].events = POLLIN; // set the "event listener" to input
+        preactor->pfds[preactor->reactor_size - 1].fd = fd; // adding the fd to the fd list
+        preactor->pfds[preactor->reactor_size - 1].events = POLLIN; // set the "event listener" to input
 
-        pr->funcs = CAST_TYPE realloc(pr->funcs, 8 * pr->reactor_size);
-        if (pr->funcs == NULL) {
+        preactor->funcs = CAST_TYPE realloc(preactor->funcs, 8 * preactor->reactor_size);
+        if (preactor->funcs == NULL) {
             perror("reactor malloc error");
             exit(1);
         }
-        pr->funcs[pr->reactor_size - 1] = handler; // adding the function to the handler list
+        preactor->funcs[preactor->reactor_size - 1] = handler; // adding the function to the handler list
 
     }
 }
 
 void RemoveHandler(void *reactor, int fd) {
-    pReactor pr = (pReactor) reactor;
+    pReactor preactor = (pReactor) reactor;
     int fd_index = -1;
-    for (int i = 0; i < pr->reactor_size; ++i) 
+    for (int i = 0; i < preactor->reactor_size; ++i) 
     {
-        if (pr->pfds[i].fd == fd) {
+        if (preactor->pfds[i].fd == fd) {
             fd_index = i;
             break;
         }
@@ -91,47 +79,47 @@ void RemoveHandler(void *reactor, int fd) {
     { // in case the fd doesn't exist
         return;
     }
-    if (pr->reactor_size == 1) 
+    if (preactor->reactor_size == 1) 
     { 
         // in case this is the last
         /// since we remove the last handler we need to cancel the handler thread
-        pthread_cancel(pr->thread);
-        free(pr->funcs);
-        pr->funcs = NULL;
-        free(pr->pfds);
-        pr->pfds = NULL;
-        pr->reactor_size = 0;
+        pthread_cancel(preactor->thread);
+        free(preactor->funcs);
+        preactor->funcs = NULL;
+        free(preactor->pfds);
+        preactor->pfds = NULL;
+        preactor->reactor_size = 0;
     } 
     else 
     {
-        --(pr->reactor_size);
-        struct pollfd *newpfds = (struct pollfd *) malloc(sizeof(struct pollfd) * pr->reactor_size);
-        void (**newfuncs)(void *, void *) = CAST_TYPE malloc(8 * pr->reactor_size);
+        --(preactor->reactor_size);
+        struct pollfd *newpfds = (struct pollfd *) malloc(sizeof(struct pollfd) * preactor->reactor_size);
+        void (**newfuncs)(void *, void *) = CAST_TYPE malloc(8 * preactor->reactor_size);
 
         if (fd_index != 0) {
-            memcpy(newpfds, pr->pfds, fd_index * sizeof(struct pollfd)); // copy everything BEFORE the index
-            memcpy(newfuncs, pr->funcs, fd_index * 8); // copy everything BEFORE the index
+            memcpy(newpfds, preactor->pfds, fd_index * sizeof(struct pollfd)); // copy everything BEFORE the index
+            memcpy(newfuncs, preactor->funcs, fd_index * 8); // copy everything BEFORE the index
         }
 
-        if (fd_index != pr->reactor_size) {
-            memcpy(newpfds + fd_index, pr->pfds + fd_index + 1,
-                   (pr->reactor_size - fd_index) * sizeof(struct pollfd)); // copy everything AFTER the index
-            memcpy(newfuncs + fd_index, pr->funcs + fd_index + 1,
-                   (pr->reactor_size - fd_index) * sizeof(struct pollfd)); // copy everything AFTER the index
+        if (fd_index != preactor->reactor_size) {
+            memcpy(newpfds + fd_index, preactor->pfds + fd_index + 1,
+                   (preactor->reactor_size - fd_index) * sizeof(struct pollfd)); // copy everything AFTER the index
+            memcpy(newfuncs + fd_index, preactor->funcs + fd_index + 1,
+                   (preactor->reactor_size - fd_index) * sizeof(struct pollfd)); // copy everything AFTER the index
         }
-        free(pr->funcs);
-        free(pr->pfds);
-        pr->pfds = newpfds;
-        pr->funcs = newfuncs;
+        free(preactor->funcs);
+        free(preactor->pfds);
+        preactor->pfds = newpfds;
+        preactor->funcs = newfuncs;
     }
 }
 
-void delReactor(pReactor pr){
-    if (pr->reactor_size != 0){
-        free(pr->pfds);
-        free(pr->funcs);
+void freeReactor(pReactor preactor){
+    if (preactor->reactor_size != 0){
+        free(preactor->pfds);
+        free(preactor->funcs);
     }
-    free(pr);
+    free(preactor);
 }
 
 
@@ -194,4 +182,24 @@ void *get_in_addr(struct sockaddr *sa) {
     }
 
     return &(((struct sockaddr_in6 *) sa)->sin6_addr);
+}
+
+void stopReactor(void * reactor)
+{
+    pReactor preactor = (pReactor) reactor;
+    
+}
+
+void *startReactor(void *reactor) {
+    pReactor preactor = (pReactor) reactor;
+
+    
+    while (1) {
+        poll(preactor->pfds, preactor->reactor_size, -1); // -1 mean making the poll wait forever (with no timeout)
+        for (int i = 0; i < preactor->reactor_size; ++i) { // for all the fds
+            if (preactor->pfds[i].revents & POLLIN) { // if the events is one we read from the fd
+                preactor->funcs[i](&(preactor->pfds[i].fd) , preactor); // run the suitable function[i] on fd[i]
+            }
+        }
+    }
 }
