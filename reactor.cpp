@@ -6,7 +6,10 @@
 #include "reactor.hpp"
 
 
-
+/**
+ * create reactor allocate memory for the reactor struct
+ * @return new reactor
+*/
 void *createReactor() {
     pReactor reactor = (pReactor) malloc(REACTOR_SIZE);
     if (reactor == NULL) {
@@ -27,17 +30,22 @@ void *createReactor() {
     return reactor;
 }
 
+/**
+ * Add new client to our list and insert the write function to each fd
+ * If he is the first client we create also the thread
+ * If we need more space we allocate it
+*/
 void addFd(void *reactor, int fd , handler_t handler) {
     pReactor preactor = (pReactor) reactor;
 
     if (preactor->reactor_size == 0) 
     {
-        preactor->pfds[0].fd = fd; // Adding the fd to the fd list
-        preactor->pfds[0].events = POLLIN; // Set the "event listener" to input
+        preactor->pfds[0].fd = fd; 
+        preactor->pfds[0].events = POLLIN; 
 
-        preactor->funcs[0] = handler; // Adding the function to the handler list
+        preactor->funcs[0] = handler; 
         preactor->reactor_size += 1;
-        // since its the first handler installation we need to create the handle thread
+
         pthread_create(&preactor->thread, NULL, startReactor, reactor);
     } 
     else 
