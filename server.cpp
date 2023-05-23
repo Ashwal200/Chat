@@ -1,3 +1,5 @@
+
+// ron test
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,8 +13,7 @@
 
 #define PORT "9034"   // Port we're listening on
 
-pReactor preactor; /// global reactor to be use to manage the communication of the server
-
+pReactor preactor;
 void _exit(int signal){
     delReactor(preactor);
     exit(0);
