@@ -1,4 +1,4 @@
-CC = gcc
+CC = clang
 CXX = g++
 FLAGS = -Wall -g -w
 

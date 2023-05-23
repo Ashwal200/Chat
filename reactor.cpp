@@ -176,7 +176,7 @@ void *get_in_addr(struct sockaddr *sa) {
 void stopReactor(void * reactor)
 {
     pReactor preactor = (pReactor) reactor;
-    
+    pthread_cancel(preactor->thread);
 }
 
 void *startReactor(void *reactor) {
