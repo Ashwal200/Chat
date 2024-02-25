@@ -21,19 +21,19 @@ This project uses the POSIX poll system call for event demultiplexing and POSIX 
 The reactor pattern is implemented in two primary files: reactor.cpp and reactor.hpp. 
 The main server application is implemented in server.cpp.
 
-##Getting Started
+## Getting Started
 To build and run the server application, follow the instructions below:
 
-##Prerequisites
+## Prerequisites
 You will need a C++ compiler (preferably GCC or similar) that supports the C++11 standard or later. The project also requires the POSIX threads library (pthread). Please ensure these are installed and properly configured on your system.
 
-##Building the project
+## Building the project
 The project includes a Makefile for easy compilation. Simply run:
 
-##make
+## make
 This will generate the executable: react_server
 
-##Running the server
+## Running the server
 After successfully building the project, you can run the server with the following command:
 
 
@@ -41,7 +41,7 @@ After successfully building the project, you can run the server with the followi
 The server will start and wait for new connections.
 
 
-##Cleaning up
+## Cleaning up
 To clean up the generated files, you can run:
 
 make clean
