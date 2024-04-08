@@ -1,4 +1,4 @@
-# Reactor Project README
+# Reactor Project
 This project is a demonstration of the reactor pattern for event handling using C++.
 
 At a high level, a reactor consists of the following components:
