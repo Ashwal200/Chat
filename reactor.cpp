@@ -135,16 +135,16 @@ void WaitFor(void * reactor)
 
 
 /**
- * Read data from the fd and print it on the terminal.
- * If the data is empty, close the connaction with the client and remove him from the
- * reactor list.
-*/
-void printData(void *newfd, void * reactor) 
+ * Read data from the fd and send it to all clients.
+ * If the data is empty, close the connection with the client and remove it from the reactor list.
+ */
+void printData(void *newfd, void *reactor) 
 {
-    int* fd = (int*) newfd;
-    
+    int* sender_fd = (int*) newfd;
+    pReactor preactor = (pReactor) reactor;
     char buff[BUF_SIZE] ={0};
-    int bytes = read(*fd, buff, BUF_SIZE);
+    int bytes = read(*sender_fd, buff, BUF_SIZE);
+
     if (bytes < 0) 
     {
         perror("read");
@@ -152,14 +152,28 @@ void printData(void *newfd, void * reactor)
     else if (bytes == 0)
     {
         printf("server: client disconnected... \n");
-        RemoveHandler(reactor, *fd);
-        close(*fd);
+        RemoveHandler(reactor, *sender_fd);
+        close(*sender_fd);
     }
     else 
     {
         printf("New message: %s\n", buff);
+        // Send the received data to all clients
+        for (int i = 0; i < preactor->reactor_size; ++i) 
+        {
+            if (preactor->pfds[i].fd != *sender_fd) 
+            { // Skip sending data back to the sender
+                int sent_bytes = send(preactor->pfds[i].fd, buff, bytes, 0);
+                if (sent_bytes != bytes) 
+                {
+                    perror("send");
+                    // Handle send error, maybe remove client from reactor
+                }
+            }
+        }
     }
 }
+
 
 /**
  * The function will accept new client and send it to the newFd() to save on the reactor fd list.
